@@ -218,16 +218,21 @@ class GraphicsScene(QGraphicsScene):
     def draw(self):
         pen = QPen(QtCore.Qt.blue)
         pen2 = QPen(QtCore.Qt.yellow)
-        brush = QBrush(QtCore.Qt.red)
+        brush = QBrush(QtCore.Qt.blue)
+        brush2 = QBrush(QtCore.Qt.yellow)
         sz = self.sz
         self.clear()
         self.addPixmap(self.image)
+        msz = 3
         if self.choose is not None:
             self.addRect(self.choose[0]-sz/2, self.choose[1]-sz/2, sz, sz, pen2)
+            self.addEllipse(self.choose[0]-msz/2, self.choose[1]-msz/2, msz, msz, pen2, brush2)
         for x, y in self.point[0]:
             self.addRect(x-sz/2, y-sz/2, sz, sz, pen)
+            self.addEllipse(x - msz / 2, y - msz / 2, msz, msz, pen, brush)
         for x, y in self.point[1]:
             self.addRect(x-sz/2, y-sz/2, sz, sz, pen)
+            self.addEllipse(x - msz / 2, y - msz / 2, msz, msz, pen, brush)
         for i in range(len(self.point[0])):
             qp1 = QPoint(self.point[0][i][0], self.point[0][i][1])
             qp2 = QPoint(self.point[1][i][0], self.point[1][i][1])
