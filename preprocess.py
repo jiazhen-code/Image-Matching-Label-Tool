@@ -1,6 +1,6 @@
 import numpy as np
 from PIL import Image
-from cv2 import cv2
+import cv2
 
 
 def pre_processing(data):
