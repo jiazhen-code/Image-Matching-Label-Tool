@@ -15,7 +15,7 @@
 1. 为了分配工作方便，默认读取worklist.txt文件中的pair对，格式如1005_Z1812_c0 1005_Z1812_a2。该文件可通过generalize_pair.py文件自动生成，会生成该数据集全部的pair对，后续可以手动
 分配worklist。
 
-2. 开启程序时，会自动读取worklist.txt的pair对，同时默认数据集文件为image/cfp和image/ago，保存路径为save/cfp和image/ago。
+2. 开启程序时，会自动读取worklist.txt的pair对，同时默认数据集文件为image/cfp和image/ago，保存路径为save/cfp和save/ago。
 
 3. 为了方便标注，显示原图时采用了数据增强方法，也可以选中显示原图按钮来显示原彩色图
 
