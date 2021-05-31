@@ -43,11 +43,11 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         self.imageDir = 'image/'
         self.save = 'save/'
         self.work_file = 'worklist.txt'
-        self.cfp_dir = os.path.join(self.imageDir, 'cfp')
-        self.ago_dir = os.path.join(self.imageDir, 'ago')
+        self.first_dir = os.path.join(self.imageDir, 'cfp')
+        self.second_dir = os.path.join(self.imageDir, 'ago')
 
-        self.save_cfp_dir = os.path.join(self.save, 'cfp')
-        self.save_ago_dir = os.path.join(self.save, 'ago')
+        self.save_first_dir = os.path.join(self.save, 'cfp')
+        self.save_second_dir = os.path.join(self.save, 'ago')
         # self.choose_save()
         self.choose_image()
 
@@ -100,7 +100,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         for i in data:
             try:
                 c, a = i.replace('\n', '').split(' ')[0], i.replace('\n', '').split(' ')[1],
-                self.data.append((self.get_img_path(self.cfp_dir, c), self.get_img_path(self.ago_dir, a)))
+                self.data.append((self.get_img_path(self.first_dir, c), self.get_img_path(self.second_dir, a)))
             except Exception:
                 pass
 
@@ -141,7 +141,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # item1 = QGraphicsPixmapItem(rawIm)
         # item2 = QGraphicsPixmapItem(relIm)
         scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h)  # 创建场景
-        scene.loadPair(self.save_cfp_dir, self.save_ago_dir, os.path.split(rawPath)[-1].split('.')[0]+'.txt', os.path.split(relPath)[-1].split('.')[0]+'.txt')
+        scene.loadPair(self.save_first_dir, self.save_second_dir, os.path.split(rawPath)[-1].split('.')[0]+'.txt', os.path.split(relPath)[-1].split('.')[0]+'.txt')
         self.raw.setScene(scene)
         # self.raw.fitInView(scene.sceneRect(), QtCore.Qt.KeepAspectRatio)
         # self.rel.setScene(scene2)
@@ -158,7 +158,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
 
     def saveOne(self):
         rawPath, relPath = self.imageList[self.cur - 1]
-        self.raw.scene().savePair(self.save_cfp_dir, self.save_ago_dir, os.path.split(rawPath)[-1].split('.')[0]+'.txt', os.path.split(relPath)[-1].split('.')[0]+'.txt')
+        self.raw.scene().savePair(self.save_first_dir, self.save_second_dir, os.path.split(rawPath)[-1].split('.')[0]+'.txt', os.path.split(relPath)[-1].split('.')[0]+'.txt')
 
     def keyPressEvent(self, event):
         if not self.open:
