@@ -39,8 +39,20 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         self.checkBox.setGeometry(QtCore.QRect(self.img_w//2, 5, 151, 41))
         self.save = None
         self.open=False
-        self.choose_save()
+        self.is_raw = False
+        self.imageDir = 'image/'
+        self.save = 'save/'
+        self.work_file = 'worklist.txt'
+        self.cfp_dir = os.path.join(self.imageDir, 'cfp')
+        self.ago_dir = os.path.join(self.imageDir, 'ago')
+
+        self.save_cfp_dir = os.path.join(self.save, 'cfp')
+        self.save_ago_dir = os.path.join(self.save, 'ago')
+        # self.choose_save()
         self.choose_image()
+
+    def get_img_path(self, image_dir, img_id):
+        return os.path.join(image_dir, '%s.jpg' % img_id)
 
     def loadDir(self):
         # for debug
@@ -48,9 +60,8 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # self.outDir = "./data/labels"
         # self.imageList = glob.glob(os.path.join(self.imageDir, '*.png'))
 
-
-
         self.imageList = self.data
+        # print(self.imageList)
         if len(self.imageList) == 0:
             print('No .jpg images found in the specified dir!')
             msg = QtWidgets.QMessageBox.warning(self, u'Warning', u'没有以jpg结尾的图片或无对应的造影图与原图！',
@@ -67,7 +78,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         if not os.path.exists(self.save):
             os.mkdir(self.save)
 
-        self.loadImage()
+        self.loadImage(self.is_raw)
         print('%d images loaded from %s' % (self.total, self.imageDir))
 
     def choose_image(self):
@@ -81,17 +92,15 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # if directory == '':
         #     return
 
-        directory = 'image/'
-        self.imageDir = directory
 
-        work_file = 'worklist.txt'
+        work_file = self.work_file
         f = open(work_file, 'r')
         data = f.readlines()
         self.data = []
         for i in data:
             try:
                 c, a = i.replace('\n', '').split(' ')[0], i.replace('\n', '').split(' ')[1],
-                self.data.append((os.path.join(self.imageDir, c), os.path.join(self.imageDir, a)))
+                self.data.append((self.get_img_path(self.cfp_dir, c), self.get_img_path(self.ago_dir, a)))
             except Exception:
                 pass
 
@@ -100,11 +109,13 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
 
     def show_raw(self):
         if self.checkBox.isChecked():
+            self.is_raw = True
             self.saveOne()
-            self.loadImage(True)
+            self.loadImage(self.is_raw)
         else:
+            self.is_raw = False
             self.saveOne()
-            self.loadImage(False)
+            self.loadImage(self.is_raw)
 
     def loadImage(self, raw_show=False):
         rawPath, relPath = self.imageList[self.cur - 1]
@@ -130,24 +141,24 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # item1 = QGraphicsPixmapItem(rawIm)
         # item2 = QGraphicsPixmapItem(relIm)
         scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h)  # 创建场景
-        scene.loadPair(self.save, os.path.split(rawPath)[-1].split('.')[0]+'.txt', os.path.split(relPath)[-1].split('.')[0]+'.txt')
+        scene.loadPair(self.save_cfp_dir, self.save_ago_dir, os.path.split(rawPath)[-1].split('.')[0]+'.txt', os.path.split(relPath)[-1].split('.')[0]+'.txt')
         self.raw.setScene(scene)
         # self.raw.fitInView(scene.sceneRect(), QtCore.Qt.KeepAspectRatio)
         # self.rel.setScene(scene2)
 
         self.label_2.setText('{}/{}'.format(self.cur, len(self.data)))
 
-    def choose_save(self):
-        # directory = QtWidgets.QFileDialog.getExistingDirectory(self, "getExistingDirectory", "./")
-        # if directory == '':
-        #     self.save = None
-        #     return
-        directory = 'save/'
-        self.save = directory
+    # def choose_save(self):
+    #     # directory = QtWidgets.QFileDialog.getExistingDirectory(self, "getExistingDirectory", "./")
+    #     # if directory == '':
+    #     #     self.save = None
+    #     #     return
+    #     directory = 'save/'
+    #     self.save = directory
 
     def saveOne(self):
         rawPath, relPath = self.imageList[self.cur - 1]
-        self.raw.scene().savePair(self.save, os.path.split(rawPath)[-1].split('.')[0]+'.txt', os.path.split(relPath)[-1].split('.')[0]+'.txt')
+        self.raw.scene().savePair(self.save_cfp_dir, self.save_ago_dir, os.path.split(rawPath)[-1].split('.')[0]+'.txt', os.path.split(relPath)[-1].split('.')[0]+'.txt')
 
     def keyPressEvent(self, event):
         if not self.open:
@@ -159,13 +170,13 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
                 self.cur = self.cur-1
                 if self.cur == 0:
                     self.cur = len(self.imageList)
-                self.loadImage()
+                self.loadImage(self.is_raw)
             elif (event.key() == Qt.Key_D):
                 self.saveOne()
                 self.cur = self.cur+1
                 if self.cur == len(self.imageList)+1:
                     self.cur = 1
-                self.loadImage()
+                self.loadImage(self.is_raw)
             elif (event.key() == Qt.Key_S):
                 self.saveOne()
 
@@ -183,13 +194,13 @@ class GraphicsScene(QGraphicsScene):
         self.w = img_w
         self.h = img_h
 
-    def loadPair(self, save_path, raw_name, rel_name):
-        if os.path.exists(os.path.join(save_path, raw_name)):
+    def loadPair(self, save_cfp_path, save_ago_path, raw_name, rel_name):
+        if os.path.exists(os.path.join(save_cfp_path, raw_name)) and os.path.exists(os.path.join(save_ago_path, rel_name)):
             with warnings.catch_warnings():
 
                 warnings.simplefilter('ignore')
-                raw = np.loadtxt(os.path.join(save_path, raw_name))
-                rel = np.loadtxt(os.path.join(save_path, rel_name))
+                raw = np.loadtxt(os.path.join(save_cfp_path, raw_name))
+                rel = np.loadtxt(os.path.join(save_ago_path, rel_name))
                 if len(raw.shape) == 1:
                     raw = raw[np.newaxis, :]
                     rel = rel[np.newaxis, :]
@@ -271,7 +282,12 @@ class GraphicsScene(QGraphicsScene):
         self.draw()
 
 
-    def savePair(self, save_path, raw_name, rel_name):
+    def savePair(self, save_path_cfp, save_path_ago, raw_name, rel_name):
+        if not os.path.exists(save_path_cfp):
+            os.makedirs(save_path_cfp)
+        if not os.path.exists(save_path_ago):
+            os.makedirs(save_path_ago)
+
         raw = np.array(self.point[0])
         rel = np.array(self.point[1])
         if len(raw)!=0:
@@ -281,8 +297,8 @@ class GraphicsScene(QGraphicsScene):
             rel[:, 0] /= float(self.w)
             rel[:, 1] /= float(self.h)
 
-        np.savetxt(os.path.join(save_path, raw_name), raw)
-        np.savetxt(os.path.join(save_path, rel_name), rel)
+        np.savetxt(os.path.join(save_path_cfp, raw_name), raw)
+        np.savetxt(os.path.join(save_path_ago, rel_name), rel)
 
 
 

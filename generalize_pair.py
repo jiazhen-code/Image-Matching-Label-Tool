@@ -39,7 +39,7 @@ for i in rawL:
     flag = names[0] + names[1]
     if flag in rd:
         for j in rd[flag]:
-            data.append((os.path.split(i)[-1], os.path.split(j)[-1]))
+            data.append((os.path.split(i)[-1].split('.')[0], os.path.split(j)[-1].split('.')[0]))
 
 s = ''
 for c, a in data:
