@@ -27,8 +27,8 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # 鼠标绘图流程:1，建立Qpixmap绘图面板2，将面板加入到绘制到主界面3，定义鼠标函数和绘制函数绘制到绘图面板
 
         #这里可以设置显示图片的大小
-        self.img_w = 800
-        self.img_h = 800
+        self.img_w = 500
+        self.img_h = 500
 
         self.resize(2*self.img_w+50, self.img_h+50)
         self.raw.setGeometry(QtCore.QRect(20, 40, 2*self.img_w, self.img_h))
@@ -46,8 +46,8 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         self.first_dir = os.path.join(self.imageDir, 'cfp')
         self.second_dir = os.path.join(self.imageDir, 'ago')
 
-        self.save_first_dir = os.path.join(self.save, 'cfp')
-        self.save_second_dir = os.path.join(self.save, 'ago')
+        # self.save_first_dir = os.path.join(self.save, 'cfp')
+        # self.save_second_dir = os.path.join(self.save, 'ago')
         # self.choose_save()
         self.choose_image()
 
@@ -141,7 +141,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # item1 = QGraphicsPixmapItem(rawIm)
         # item2 = QGraphicsPixmapItem(relIm)
         scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h)  # 创建场景
-        scene.loadPair(self.save_first_dir, self.save_second_dir, os.path.split(rawPath)[-1].split('.')[0]+'.txt', os.path.split(relPath)[-1].split('.')[0]+'.txt')
+        scene.loadPair(self.save, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
         self.raw.setScene(scene)
         # self.raw.fitInView(scene.sceneRect(), QtCore.Qt.KeepAspectRatio)
         # self.rel.setScene(scene2)
@@ -158,7 +158,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
 
     def saveOne(self):
         rawPath, relPath = self.imageList[self.cur - 1]
-        self.raw.scene().savePair(self.save_first_dir, self.save_second_dir, os.path.split(rawPath)[-1].split('.')[0]+'.txt', os.path.split(relPath)[-1].split('.')[0]+'.txt')
+        self.raw.scene().savePair(self.save, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
 
     def keyPressEvent(self, event):
         if not self.open:
@@ -194,16 +194,22 @@ class GraphicsScene(QGraphicsScene):
         self.w = img_w
         self.h = img_h
 
-    def loadPair(self, save_cfp_path, save_ago_path, raw_name, rel_name):
-        if os.path.exists(os.path.join(save_cfp_path, raw_name)) and os.path.exists(os.path.join(save_ago_path, rel_name)):
+    def loadPair(self, save_path, raw_name, rel_name):
+        if os.path.exists(os.path.join(save_path, raw_name+'-'+rel_name+'.txt')):
             with warnings.catch_warnings():
 
                 warnings.simplefilter('ignore')
-                raw = np.loadtxt(os.path.join(save_cfp_path, raw_name))
-                rel = np.loadtxt(os.path.join(save_ago_path, rel_name))
-                if len(raw.shape) == 1:
-                    raw = raw[np.newaxis, :]
-                    rel = rel[np.newaxis, :]
+                save_np = np.loadtxt(os.path.join(save_path, raw_name+'-'+rel_name+'.txt'))
+                if len(save_np)==0:
+                    return
+
+                if len(save_np.shape) == 1:
+                    # print(save_np.shape)
+                    save_np = save_np[np.newaxis, :]
+
+                raw = save_np[:, :2]
+                rel = save_np[:, 2:]
+
                 try:
                     raw[:, 0] *= float(self.w)
                     raw[:, 1] *= float(self.h)
@@ -287,14 +293,13 @@ class GraphicsScene(QGraphicsScene):
         self.draw()
 
 
-    def savePair(self, save_path_cfp, save_path_ago, raw_name, rel_name):
-        if not os.path.exists(save_path_cfp):
-            os.makedirs(save_path_cfp)
-        if not os.path.exists(save_path_ago):
-            os.makedirs(save_path_ago)
+    def savePair(self, save_path, raw_name, rel_name):
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
 
         raw = np.array(self.point[0])
         rel = np.array(self.point[1])
+        save_np = np.zeros([len(raw), 4])
         if len(raw)!=0:
             rel[:, 0]-=self.width
             raw[:, 0] /= float(self.w)
@@ -302,8 +307,10 @@ class GraphicsScene(QGraphicsScene):
             rel[:, 0] /= float(self.w)
             rel[:, 1] /= float(self.h)
 
-        np.savetxt(os.path.join(save_path_cfp, raw_name), raw)
-        np.savetxt(os.path.join(save_path_ago, rel_name), rel)
+            save_np[:, :2] = raw
+            save_np[:, 2:] = rel
+        np.savetxt(os.path.join(save_path, raw_name+'-'+rel_name+'.txt'), save_np)
+        # np.savetxt(os.path.join(save_path_ago, rel_name), rel)
 
 
 
