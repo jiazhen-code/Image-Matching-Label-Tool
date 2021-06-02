@@ -196,10 +196,11 @@ class GraphicsScene(QGraphicsScene):
 
     def loadPair(self, save_path, raw_name, rel_name):
         if os.path.exists(os.path.join(save_path, raw_name+'-'+rel_name+'.txt')):
+            f = os.path.join(save_path, raw_name+'-'+rel_name+'.txt')
             with warnings.catch_warnings():
 
                 warnings.simplefilter('ignore')
-                save_np = np.loadtxt(os.path.join(save_path, raw_name+'-'+rel_name+'.txt'))
+                save_np = np.loadtxt(f)
                 if len(save_np)==0:
                     return
 
@@ -240,8 +241,8 @@ class GraphicsScene(QGraphicsScene):
             self.addRect(x-sz/2, y-sz/2, sz, sz, pen)
             self.addEllipse(x - msz / 2, y - msz / 2, msz, msz, pen, brush)
         for i in range(len(self.point[0])):
-            qp1 = QPoint(self.point[0][i][0], self.point[0][i][1])
-            qp2 = QPoint(self.point[1][i][0], self.point[1][i][1])
+            qp1 = QPointF(self.point[0][i][0], self.point[0][i][1])
+            qp2 = QPointF(self.point[1][i][0], self.point[1][i][1])
             ql = QLineF(qp1, qp2)
             self.addLine(ql, pen,)
     def mousePressEvent(self, event):
