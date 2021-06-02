@@ -12,7 +12,7 @@ from PyQt5.QtCore import *
 import os
 import numpy as np
 import cv2
-from PIL import Image, ImageQt
+from PIL import Image
 from preprocess import pre_processing
 
 class firstForm(QtWidgets.QMainWindow, Ui_Form):
@@ -135,13 +135,20 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         result[:self.img_h, self.img_w:, :] = relIm
         result = result.astype(np.uint8)
         result = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
-        result = Image.fromarray(result)
-        result = ImageQt.toqpixmap(result)
+        # result = Image.fromarray(result)
+        # result = ImageQt.toqpixmap(result)
 
+        height, width, channel = result.shape
+        bytesPerLine = 3 * width
+        result = QImage(result.data, width, height, bytesPerLine, QImage.Format_RGB888)
+        result = QPixmap.fromImage(result)
+        # result = QPixmap()
         # item1 = QGraphicsPixmapItem(rawIm)
         # item2 = QGraphicsPixmapItem(relIm)
+
         scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h)  # 创建场景
         scene.loadPair(self.save, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
+
         self.raw.setScene(scene)
         # self.raw.fitInView(scene.sceneRect(), QtCore.Qt.KeepAspectRatio)
         # self.rel.setScene(scene2)
