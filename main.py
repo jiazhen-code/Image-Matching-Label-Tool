@@ -15,20 +15,24 @@ import cv2
 from PIL import Image
 from preprocess import pre_processing
 
+DEFAULT_IMG_W = 600
+DEFAULT_IMG_H = 600
+
 class firstForm(QtWidgets.QMainWindow, Ui_Form):
-    def __init__(self):
+    def __init__(self, user):
         super(firstForm, self).__init__()
         self.setupUi(self)
 
         # self.setMouseTracking(True)
         # self.raw.setMouseTracking(True)
         # self.rel.setMouseTracking(True)
-        self.setWindowTitle('demo')
+        self.setWindowTitle('Annotator: %s' % user)
         # 鼠标绘图流程:1，建立Qpixmap绘图面板2，将面板加入到绘制到主界面3，定义鼠标函数和绘制函数绘制到绘图面板
 
+        self.user = user
         #这里可以设置显示图片的大小
-        self.img_w = 500
-        self.img_h = 500
+        self.img_w = DEFAULT_IMG_W
+        self.img_h = DEFAULT_IMG_H
 
         self.resize(2*self.img_w+50, self.img_h+50)
         self.raw.setGeometry(QtCore.QRect(20, 40, 2*self.img_w, self.img_h))
@@ -37,18 +41,16 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # self.pushButton_2.setGeometry(QtCore.QRect(340, self.img_h + 90, 112, 32))
         self.label_2.setGeometry(QtCore.QRect(self.img_w+self.img_w//2, 5, 101, 41))
         self.checkBox.setGeometry(QtCore.QRect(self.img_w//2, 5, 151, 41))
-        self.save = None
+
         self.open=False
         self.is_raw = False
         self.imageDir = 'image/'
-        self.save = 'save/'
+        self.save_dir = os.path.join('save', self.user)
+
         self.work_file = 'worklist.txt'
         self.first_dir = os.path.join(self.imageDir, 'cfp')
         self.second_dir = os.path.join(self.imageDir, 'ago')
 
-        # self.save_first_dir = os.path.join(self.save, 'cfp')
-        # self.save_second_dir = os.path.join(self.save, 'ago')
-        # self.choose_save()
         self.choose_image()
 
     def get_img_path(self, image_dir, img_id):
@@ -75,8 +77,8 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         self.cur = 1
         self.total = len(self.imageList)
 
-        if not os.path.exists(self.save):
-            os.mkdir(self.save)
+        if not os.path.exists(self.save_dir):
+            os.mkdir(self.save_dir)
 
         self.loadImage(self.is_raw)
         print('%d images loaded from %s' % (self.total, self.imageDir))
@@ -147,7 +149,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # item2 = QGraphicsPixmapItem(relIm)
 
         scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h)  # 创建场景
-        scene.loadPair(self.save, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
+        scene.loadPair(self.save_dir, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
 
         self.raw.setScene(scene)
         # self.raw.fitInView(scene.sceneRect(), QtCore.Qt.KeepAspectRatio)
@@ -165,7 +167,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
 
     def saveOne(self):
         rawPath, relPath = self.imageList[self.cur - 1]
-        self.raw.scene().savePair(self.save, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
+        self.raw.scene().savePair(self.save_dir, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
 
     def keyPressEvent(self, event):
         if not self.open:
@@ -323,7 +325,21 @@ class GraphicsScene(QGraphicsScene):
 
 
 if __name__ == "__main__":
+    from optparse import OptionParser
+    parser = OptionParser(usage="""usage: %prog [options] user""")
+    (options, args) = parser.parse_args(sys.argv[1:]) 
+    if len(args) < 1:
+        parser.print_help()
+        sys.exit(0)
+
+    valid_users = [x.strip() for x in open('users.txt').readlines()]
+    user = args[0]
+    if user not in valid_users:
+        print ('invalid user: %s' % user)
+        print ('valid user list: %s' % ' '.join(valid_users))
+        sys.exit(0)
+
     app = QtWidgets.QApplication(sys.argv)
-    myshow = firstForm()
+    myshow = firstForm(user)
     myshow.show()
     sys.exit(app.exec_())
