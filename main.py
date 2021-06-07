@@ -39,7 +39,8 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
 
         # self.pushButton.setGeometry(QtCore.QRect(190, self.img_h+90, 112, 32))
         # self.pushButton_2.setGeometry(QtCore.QRect(340, self.img_h + 90, 112, 32))
-        self.label_2.setGeometry(QtCore.QRect(self.img_w+self.img_w//2, 5, 101, 41))
+        self.label_2.setGeometry(QtCore.QRect(self.img_w, 5, 101, 41))
+        self.label.setGeometry(QtCore.QRect(self.img_w + 100, 5, 300, 41))
         self.checkBox.setGeometry(QtCore.QRect(self.img_w//2, 5, 151, 41))
 
         self.open=False
@@ -148,7 +149,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # item1 = QGraphicsPixmapItem(rawIm)
         # item2 = QGraphicsPixmapItem(relIm)
 
-        scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h)  # 创建场景
+        scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h, self.label)  # 创建场景
         scene.loadPair(self.save_dir, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
 
         self.raw.setScene(scene)
@@ -190,7 +191,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
                 self.saveOne()
 
 class GraphicsScene(QGraphicsScene):
-    def __init__(self, width, image, img_w, img_h):
+    def __init__(self, width, image, img_w, img_h, label):
         super(QGraphicsScene, self).__init__()
         self.point = [[], []]
         self.choose = None
@@ -202,8 +203,10 @@ class GraphicsScene(QGraphicsScene):
         self.sz = self.width//33
         self.w = img_w
         self.h = img_h
+        self.label = label
 
     def loadPair(self, save_path, raw_name, rel_name):
+        self.label.setText(f'<font color=red>(当前样例已标注匹配对:{len(self.point[0])})</font></h2>')
         if os.path.exists(os.path.join(save_path, raw_name+'-'+rel_name+'.txt')):
             f = os.path.join(save_path, raw_name+'-'+rel_name+'.txt')
             with warnings.catch_warnings():
@@ -240,6 +243,7 @@ class GraphicsScene(QGraphicsScene):
         self.clear()
         self.addPixmap(self.image)
         msz = 3
+        self.label.setText(f'<font color=red>(当前样例已标注匹配对:{len(self.point[0])})</font></h2>')
         if self.choose is not None:
             self.addRect(self.choose[0]-sz/2, self.choose[1]-sz/2, sz, sz, pen2)
             self.addEllipse(self.choose[0]-msz/2, self.choose[1]-msz/2, msz, msz, pen2, brush2)
