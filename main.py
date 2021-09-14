@@ -27,10 +27,10 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # 鼠标绘图流程:1，建立Qpixmap绘图面板2，将面板加入到绘制到主界面3，定义鼠标函数和绘制函数绘制到绘图面板
 
         #这里可以设置显示图片的大小
-        self.img_w = 500
-        self.img_h = 500
+        self.img_w = 800
+        self.img_h = 800
         self.aligned.setScaledContents(True)
-        self.resize(2*self.img_w+50, 2*self.img_h+50)
+        self.resize(3*self.img_w+70, self.img_h+50)
         self.raw.setGeometry(QtCore.QRect(20, 40, 2*self.img_w, self.img_h))
 
         # self.pushButton.setGeometry(QtCore.QRect(190, self.img_h+90, 112, 32))
@@ -38,8 +38,8 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         self.label_2.setGeometry(QtCore.QRect(self.img_w+self.img_w//2, 5, 101, 41))
         self.checkBox.setGeometry(QtCore.QRect(self.img_w//2, 5, 151, 41))
         self.checkBox.setChecked(True)
-        self.aligned.setGeometry(QtCore.QRect(self.img_w//2+30, self.img_h+70, self.img_w, self.img_h//1.2))
-        self.label.setGeometry(QtCore.QRect(self.img_w//2-60, self.img_h+100, 81, 16))
+        self.aligned.setGeometry(QtCore.QRect(self.img_w*2+60, 40, self.img_w, int(self.img_h)))
+        self.label.setGeometry(QtCore.QRect(self.img_w*2+60, 20, 81, 16))
         self.save = None
         self.open=False
         self.is_raw = True
@@ -143,13 +143,20 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
 
         result = result.astype(np.uint8)
         result = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
+
         result = Image.fromarray(result)
-        result = ImageQt.toqpixmap(result)
+        # result.show()
+        if result.mode == "RGB":
+            result = result.convert("RGBA")
+        result = result.toqpixmap()
+        # print(result)
+        #
 
         # item1 = QGraphicsPixmapItem(rawIm)
         # item2 = QGraphicsPixmapItem(relIm)
 
-        scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h, rawIm, relIm, self.aligned)  # 创建场景
+        scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h, rawIm, relIm, self.aligned)
+        scene.addPixmap(result)# 创建场景
         scene.loadPair(self.save, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
         self.raw.setScene(scene)
         # self.raw.fitInView(scene.sceneRect(), QtCore.Qt.KeepAspectRatio)
@@ -199,7 +206,6 @@ class GraphicsScene(QGraphicsScene):
         self.width = width
         #0 代表选择的是原图上的点， 1为映射图上的点
         self.flag = None
-        self.addPixmap(image)
         self.image = image
         self.sz = self.width//33
         self.w = img_w
@@ -207,8 +213,10 @@ class GraphicsScene(QGraphicsScene):
         self.raw_img = raw_img
         self.rel_img = rel_img
         self.aligned = aligned
+        # self.addPixmap(image)
 
     def loadPair(self, save_path, raw_name, rel_name):
+        # return
         if os.path.exists(os.path.join(save_path, raw_name+'-'+rel_name+'.txt')):
             with warnings.catch_warnings():
 
@@ -254,8 +262,8 @@ class GraphicsScene(QGraphicsScene):
             self.addRect(x-sz/2, y-sz/2, sz, sz, pen)
             self.addEllipse(x - msz / 2, y - msz / 2, msz, msz, pen, brush)
         for i in range(len(self.point[0])):
-            qp1 = QPoint(self.point[0][i][0], self.point[0][i][1])
-            qp2 = QPoint(self.point[1][i][0], self.point[1][i][1])
+            qp1 = QPoint(int(self.point[0][i][0]), int(self.point[0][i][1]))
+            qp2 = QPoint(int(self.point[1][i][0]), int(self.point[1][i][1]))
             ql = QLineF(qp1, qp2)
             self.addLine(ql, pen,)
 
@@ -286,7 +294,8 @@ class GraphicsScene(QGraphicsScene):
                 pixmap_imgSrc = QPixmap.fromImage(temp_imgSrc).scaled(label_width, label_height)
                 self.aligned.setPixmap(pixmap_imgSrc)
 
-
+    def mouseMoveEvent(self, QGraphicsSceneMouseEvent):
+        pass
     def mousePressEvent(self, event):
         #鼠标左键是画点
         if event.buttons () == QtCore.Qt.LeftButton:

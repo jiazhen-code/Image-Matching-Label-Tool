@@ -25,3 +25,11 @@
 然后再次选中另一个图中的一个区域点，则自动产生一个匹配对连线，此时颜色变为蓝色。如果想删除某一个匹配对连线，在这个匹配对的端点区域按下鼠标右键即可删除。
 
 5. 为了操作方便，本工具采用键盘控制翻页和保存。上翻页为键盘A，下翻页为键盘D，保存标注结果为S，注意翻页会自动保存标注结果。
+
+
+!!!!!!!!!!!!!!!遇到一个ImageQt和PyQt5之间的bug，
+使用toqpixmap()前，应将image的rgb模式换到rgba模式
+
+if result.mode == "RGB":
+    result = result.convert("RGBA")
+result = result.toqpixmap()
