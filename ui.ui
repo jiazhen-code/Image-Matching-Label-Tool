@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1255</width>
-    <height>669</height>
+    <width>1243</width>
+    <height>984</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -57,6 +57,32 @@
    </property>
    <property name="text">
     <string>显示原图</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>190</x>
+     <y>770</y>
+     <width>81</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>配准结果图：</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="aligned">
+   <property name="geometry">
+    <rect>
+     <x>400</x>
+     <y>650</y>
+     <width>481</width>
+     <height>301</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
    </property>
   </widget>
  </widget>

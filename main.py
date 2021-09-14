@@ -29,17 +29,20 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         #这里可以设置显示图片的大小
         self.img_w = 500
         self.img_h = 500
-
-        self.resize(2*self.img_w+50, self.img_h+50)
+        self.aligned.setScaledContents(True)
+        self.resize(2*self.img_w+50, 2*self.img_h+50)
         self.raw.setGeometry(QtCore.QRect(20, 40, 2*self.img_w, self.img_h))
 
         # self.pushButton.setGeometry(QtCore.QRect(190, self.img_h+90, 112, 32))
         # self.pushButton_2.setGeometry(QtCore.QRect(340, self.img_h + 90, 112, 32))
         self.label_2.setGeometry(QtCore.QRect(self.img_w+self.img_w//2, 5, 101, 41))
         self.checkBox.setGeometry(QtCore.QRect(self.img_w//2, 5, 151, 41))
+        self.checkBox.setChecked(True)
+        self.aligned.setGeometry(QtCore.QRect(self.img_w//2+30, self.img_h+70, self.img_w, self.img_h//1.2))
+        self.label.setGeometry(QtCore.QRect(self.img_w//2-60, self.img_h+100, 81, 16))
         self.save = None
         self.open=False
-        self.is_raw = False
+        self.is_raw = True
         self.imageDir = 'image/'
         self.save = 'save/'
         self.work_file = 'worklist.txt'
@@ -122,17 +125,22 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         rawIm = cv2.imread(rawPath, 1)
         relIm = cv2.imread(relPath, 1)
         rawIm = cv2.resize(rawIm,(self.img_w, self.img_h))
-
-        if not raw_show:
-            rawIm = rawIm[:, :, 1]
-            rawIm = pre_processing(rawIm)
-            rawIm = cv2.cvtColor(rawIm, cv2.COLOR_GRAY2RGB)
-
         relIm = cv2.resize(relIm, (self.img_w, self.img_h))
-
         result = np.zeros([self.img_h, 2*self.img_w, 3])
         result[:self.img_h, :self.img_w, :] = rawIm
         result[:self.img_h, self.img_w:, :] = relIm
+        if not raw_show:
+            rawIm2 = rawIm[:, :, 1]
+            rawIm2 = pre_processing(rawIm2)
+            rawIm2 = cv2.cvtColor(rawIm2, cv2.COLOR_GRAY2RGB)
+            relIm2 = relIm[:, :, 1]
+            relIm2 = pre_processing(relIm2)
+            relIm2 = cv2.cvtColor(relIm2, cv2.COLOR_GRAY2RGB)
+
+            result = np.zeros([self.img_h, 2*self.img_w, 3])
+            result[:self.img_h, :self.img_w, :] = rawIm2
+            result[:self.img_h, self.img_w:, :] = relIm2
+
         result = result.astype(np.uint8)
         result = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
         result = Image.fromarray(result)
@@ -140,7 +148,8 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
 
         # item1 = QGraphicsPixmapItem(rawIm)
         # item2 = QGraphicsPixmapItem(relIm)
-        scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h)  # 创建场景
+
+        scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h, rawIm, relIm, self.aligned)  # 创建场景
         scene.loadPair(self.save, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
         self.raw.setScene(scene)
         # self.raw.fitInView(scene.sceneRect(), QtCore.Qt.KeepAspectRatio)
@@ -166,6 +175,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         if len(self.imageList) > 0:
             #向前翻页
             if (event.key() == Qt.Key_A):
+                self.aligned.clear()
                 self.saveOne()
                 self.cur = self.cur-1
                 if self.cur == 0:
@@ -173,6 +183,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
                 self.loadImage(self.is_raw)
             elif (event.key() == Qt.Key_D):
                 self.saveOne()
+                self.aligned.clear()
                 self.cur = self.cur+1
                 if self.cur == len(self.imageList)+1:
                     self.cur = 1
@@ -181,7 +192,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
                 self.saveOne()
 
 class GraphicsScene(QGraphicsScene):
-    def __init__(self, width, image, img_w, img_h):
+    def __init__(self, width, image, img_w, img_h, raw_img, rel_img, aligned):
         super(QGraphicsScene, self).__init__()
         self.point = [[], []]
         self.choose = None
@@ -193,6 +204,9 @@ class GraphicsScene(QGraphicsScene):
         self.sz = self.width//33
         self.w = img_w
         self.h = img_h
+        self.raw_img = raw_img
+        self.rel_img = rel_img
+        self.aligned = aligned
 
     def loadPair(self, save_path, raw_name, rel_name):
         if os.path.exists(os.path.join(save_path, raw_name+'-'+rel_name+'.txt')):
@@ -244,6 +258,35 @@ class GraphicsScene(QGraphicsScene):
             qp2 = QPoint(self.point[1][i][0], self.point[1][i][1])
             ql = QLineF(qp1, qp2)
             self.addLine(ql, pen,)
+
+        if len(self.point[0])>=4:
+            p1 = self.point[0]
+            p2 = self.point[1]
+            cv_kpts1 = [cv2.KeyPoint(int(i[0]), int(i[1]), 25)
+                        for i in p1]
+            cv_kpts2 = [cv2.KeyPoint(int(i[0] - self.width), int(i[1]), 25)
+                        for i in p2]
+            src_pts = np.float32([cv_kpts1[i].pt for i in range(len(self.point[0]))]).reshape(-1, 1, 2)
+            dst_pts = np.float32([cv_kpts2[i].pt for i in range(len(self.point[0]))]).reshape(-1, 1, 2)
+            H_m, mask = cv2.findHomography(src_pts, dst_pts, 0, 3)
+            if H_m is not None:
+                im1 = self.raw_img[:,:,1]
+                im2 = self.rel_img[:,:,1]
+                h, w = im1.shape[0], im1.shape[1]
+                merged = np.zeros((h, w, 3), dtype=np.uint8)
+                align_im1 = cv2.warpPerspective(im1, H_m, (h, w), borderMode=cv2.BORDER_CONSTANT, borderValue=(0))
+                # print(im1.shape)
+                merged[:, :, 0] = align_im1
+                merged[:, :, 1] = im2
+                label_width = self.aligned.width()
+                label_height = self.aligned.height()
+                img_src = merged
+                temp_imgSrc = QImage(img_src[:], img_src.shape[1], img_src.shape[0], img_src.shape[1] * 3, QImage.Format_RGB888)
+                # 将图片转换为QPixmap方便显示
+                pixmap_imgSrc = QPixmap.fromImage(temp_imgSrc).scaled(label_width, label_height)
+                self.aligned.setPixmap(pixmap_imgSrc)
+
+
     def mousePressEvent(self, event):
         #鼠标左键是画点
         if event.buttons () == QtCore.Qt.LeftButton:
