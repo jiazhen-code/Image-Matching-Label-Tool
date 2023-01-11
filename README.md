@@ -1,4 +1,6 @@
-# Retinal-Label-Tool
+# Image-Matching-Label-Tool
+
+![show](show.png)
 
 ## 使用需知
 
@@ -15,8 +17,6 @@
 5. 标注时显示的是一个矩形框，实际存储的位置是该矩形框的中心位置。所以尽量使得矩形框的中心区域更接近要标注的特征点。
 
 ## 使用说明
-
-![show](show.png)
 
 1. 为了分配工作方便，默认读取[worklist_{user}.txt](https://github.com/QzAnsel/Retinal-Label-Tool/blob/master/worklist.txt)文件中的pair对，格式如1005_Z1812_c0 1005_Z1812_a2。该文件可通过generalize_pair.py文件自动生成，会生成该数据集全部的pair对，后续可以手动
 分配worklist。
