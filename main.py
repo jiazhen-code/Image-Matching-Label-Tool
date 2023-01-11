@@ -16,6 +16,19 @@ from PIL import Image, ImageQt
 from preprocess import pre_processing
 
 class firstForm(QtWidgets.QMainWindow, Ui_Form):
+    def setSize(self, img_w, img_h):
+        self.img_w = img_w
+        self.img_h = img_h
+        self.aligned.setScaledContents(True)
+        self.resize(3 * self.img_w + 80, self.img_h + 70)
+        self.raw.setGeometry(QtCore.QRect(20, 40, 2 * self.img_w+10, self.img_h+10))
+
+        # self.pushButton.setGeometry(QtCore.QRect(190, self.img_h+90, 112, 32))
+        # self.pushButton_2.setGeometry(QtCore.QRect(340, self.img_h + 90, 112, 32))
+        self.label_2.setGeometry(QtCore.QRect(self.img_w + self.img_w // 2, 5, 101, 41))
+        self.checkBox.setGeometry(QtCore.QRect(self.img_w // 2, 5, 151, 41))
+        self.aligned.setGeometry(QtCore.QRect(self.img_w * 2 + 60, 40, self.img_w+10, self.img_h+10))
+        self.label.setGeometry(QtCore.QRect(self.img_w * 2 + 60, 20, 81, 16))
     def __init__(self):
         super(firstForm, self).__init__()
         self.setupUi(self)
@@ -24,31 +37,22 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # self.raw.setMouseTracking(True)
         # self.rel.setMouseTracking(True)
         self.setWindowTitle('demo')
+        self.w = 300
+        self.h = 300
         # 鼠标绘图流程:1，建立Qpixmap绘图面板2，将面板加入到绘制到主界面3，定义鼠标函数和绘制函数绘制到绘图面板
-
+        self.setSize(self.w, self.h)
         #这里可以设置显示图片的大小
-        self.img_w = 800
-        self.img_h = 800
-        self.aligned.setScaledContents(True)
-        self.resize(3*self.img_w+70, self.img_h+50)
-        self.raw.setGeometry(QtCore.QRect(20, 40, 2*self.img_w, self.img_h))
 
-        # self.pushButton.setGeometry(QtCore.QRect(190, self.img_h+90, 112, 32))
-        # self.pushButton_2.setGeometry(QtCore.QRect(340, self.img_h + 90, 112, 32))
-        self.label_2.setGeometry(QtCore.QRect(self.img_w+self.img_w//2, 5, 101, 41))
-        self.checkBox.setGeometry(QtCore.QRect(self.img_w//2, 5, 151, 41))
         self.checkBox.setChecked(True)
-        self.aligned.setGeometry(QtCore.QRect(self.img_w*2+60, 40, self.img_w, int(self.img_h)))
-        self.label.setGeometry(QtCore.QRect(self.img_w*2+60, 20, 81, 16))
-        self.save = None
         self.open=False
         self.is_raw = True
         self.imageDir = 'image/'
-        self.save = 'save/'
-        self.work_file = 'worklist.txt'
-        self.first_dir = os.path.join(self.imageDir, 'cfp')
-        self.second_dir = os.path.join(self.imageDir, 'ago')
-
+        self.user = 'jiazhen'
+        self.save = f'save/{self.user}'
+        self.work_file = f'worklist_{self.user}.txt'
+        self.first_dir = os.path.join(self.imageDir, 'query')
+        self.second_dir = os.path.join(self.imageDir, 'refer')
+        self.scale = 1
         # self.save_first_dir = os.path.join(self.save, 'cfp')
         # self.save_second_dir = os.path.join(self.save, 'ago')
         # self.choose_save()
@@ -120,6 +124,32 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
             self.saveOne()
             self.loadImage(self.is_raw)
 
+    def wheelEvent(self, event):
+        delta = event.angleDelta().y()
+        if delta > 0 and self.scale >= 4:  # 只能放大4倍
+            return
+
+        else:
+            scale = self.scale
+            if delta > 0:
+                scale *= 1.1  # 每次放大10%
+            else:
+                scale *= 0.9  # 每次缩小10%
+            if scale <= 1:
+                self.scale = 1
+            else:
+                self.scale = scale
+                # 移动值：x * scale * 1.3 - x * scale = x * scale * 0.3
+                # if delta > 0:
+                #     # moveBy指的是item左上角移动的相对距离，相对原始左上角，原始值为(0, 0)向上向右为负数
+                #     self.moveBy(event.pos().x(), event.pos().y(), -1)
+                # else:
+                #     self.moveBy(event.pos().x(), event.pos().y(), -1)
+            self.setSize(int(self.w*self.scale), int(self.h*self.scale))
+            self.saveOne()
+            self.loadImage(self.is_raw)
+            self.update()
+
     def loadImage(self, raw_show=False):
         rawPath, relPath = self.imageList[self.cur - 1]
         rawIm = cv2.imread(rawPath, 1)
@@ -156,6 +186,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # item2 = QGraphicsPixmapItem(relIm)
 
         scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h, rawIm, relIm, self.aligned)
+        scene.changeValue.connect(self.saveOne)
         scene.addPixmap(result)# 创建场景
         scene.loadPair(self.save, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
         self.raw.setScene(scene)
@@ -199,6 +230,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
                 self.saveOne()
 
 class GraphicsScene(QGraphicsScene):
+    changeValue = pyqtSignal()
     def __init__(self, width, image, img_w, img_h, raw_img, rel_img, aligned):
         super(QGraphicsScene, self).__init__()
         self.point = [[], []]
@@ -276,7 +308,7 @@ class GraphicsScene(QGraphicsScene):
                         for i in p2]
             src_pts = np.float32([cv_kpts1[i].pt for i in range(len(self.point[0]))]).reshape(-1, 1, 2)
             dst_pts = np.float32([cv_kpts2[i].pt for i in range(len(self.point[0]))]).reshape(-1, 1, 2)
-            H_m, mask = cv2.findHomography(src_pts, dst_pts, 0, 3)
+            H_m, mask = cv2.findHomography(src_pts, dst_pts, 0, 5)
             if H_m is not None:
                 im1 = self.raw_img[:,:,1]
                 im2 = self.rel_img[:,:,1]
@@ -293,6 +325,20 @@ class GraphicsScene(QGraphicsScene):
                 # 将图片转换为QPixmap方便显示
                 pixmap_imgSrc = QPixmap.fromImage(temp_imgSrc).scaled(label_width, label_height)
                 self.aligned.setPixmap(pixmap_imgSrc)
+
+    # def moveBy(self, pos_x, pos_y, op=-1):
+    #     sx = int(pos_x * self.scale)
+    #     sy = int(pos_y * self.scale)
+    #     self.moveX = sx - pos_x
+    #     self.moveY = sy - pos_y
+    #     self.moveY = op * self.moveY
+    #     self.moveX = op * self.moveX
+    #     if self.moveY > 0:
+    #         self.moveY = 0
+    #     if self.moveX > 0:
+    #         self.moveX = 0
+
+
 
     def mouseMoveEvent(self, QGraphicsSceneMouseEvent):
         pass
@@ -315,12 +361,28 @@ class GraphicsScene(QGraphicsScene):
                         self.point[0].append(self.choose)
                     self.choose = None
                     self.flag = None
+                    self.changeValue.emit()
                 else:
                     self.choose = choose
                     self.flag = flag
             else:
                 self.choose = choose
                 self.flag = x < self.width
+
+                # 遍历寻找相近点修改
+                flag = x < self.width
+                ps = self.point[1 - int(flag)]
+                up = None
+                for step, (xx, yy) in enumerate(ps):
+                    # 在矩形范围内，一次删除一个点
+                    if abs(x - xx) < self.sz + 5 and abs(y - yy) < self.sz + 5:
+                        up = step
+                        break
+                if up is not None:
+                    self.point[1-self.flag][up] = self.choose
+                    self.choose = None
+                    self.changeValue.emit()
+
         #鼠标右键是擦除
         elif event.buttons () == QtCore.Qt.RightButton:
             x = event.scenePos().x()
@@ -341,9 +403,9 @@ class GraphicsScene(QGraphicsScene):
                 if rm is not None:
                     del self.point[0][rm]
                     del self.point[1][rm]
+                    self.changeValue.emit()
 
         self.draw()
-
 
     def savePair(self, save_path, raw_name, rel_name):
         if not os.path.exists(save_path):
