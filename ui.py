@@ -15,7 +15,10 @@ class Ui_Form(object):
         Form.setObjectName("Form")
         Form.resize(1243, 984)
         self.label_2 = QtWidgets.QLabel(Form)
+        self.label_3 = QtWidgets.QLabel(Form)
         self.label_2.setGeometry(QtCore.QRect(960, 10, 101, 21))
+        self.label_3.setGeometry(QtCore.QRect(760, 10, 201, 21))
+
         font = QtGui.QFont()
         font.setPointSize(16)
         self.label_2.setFont(font)

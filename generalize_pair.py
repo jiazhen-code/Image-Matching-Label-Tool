@@ -5,7 +5,7 @@
 
 import os
 #定义数据集文件位置
-imageDir = 'image'
+imageDir = r'C:\Users\ljz\Desktop\res'
 
 
 fs = []
@@ -20,14 +20,14 @@ rawL = []
 relL = []
 for i in fs:
     if i.endswith('.jpg'):
-        if 'a' in i.split('_')[-1].replace('.jpg', ''):
+        if '1' == i.split('_')[-1].replace('.jpg', ''):
             relL.append(i)
         else:
             rawL.append(i)
 rd = {}
 for i in relL:
     names = os.path.split(i)[-1].split('_')
-    flag = names[0]+names[1]
+    flag = names[0]
     if flag in rd:
         rd[flag].append(i)
     else:
@@ -36,7 +36,7 @@ for i in relL:
 data = []
 for i in rawL:
     names = os.path.split(i)[-1].split('_')
-    flag = names[0] + names[1]
+    flag = names[0]
     if flag in rd:
         for j in rd[flag]:
             data.append((os.path.split(i)[-1].split('.')[0], os.path.split(j)[-1].split('.')[0]))

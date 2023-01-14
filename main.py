@@ -25,10 +25,13 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
 
         # self.pushButton.setGeometry(QtCore.QRect(190, self.img_h+90, 112, 32))
         # self.pushButton_2.setGeometry(QtCore.QRect(340, self.img_h + 90, 112, 32))
-        self.label_2.setGeometry(QtCore.QRect(self.img_w + self.img_w // 2, 5, 101, 41))
+        self.label_2.setGeometry(QtCore.QRect(self.img_w + self.img_w // 7, 5, 101, 41))
+        self.label_3.setGeometry(QtCore.QRect(self.img_w + self.img_w // 2, 5, 201, 41))
+        self.label_3.setText('关键点对数量：')
         self.checkBox.setGeometry(QtCore.QRect(self.img_w // 2, 5, 151, 41))
         self.aligned.setGeometry(QtCore.QRect(self.img_w * 2 + 60, 40, self.img_w+10, self.img_h+10))
         self.label.setGeometry(QtCore.QRect(self.img_w * 2 + 60, 20, 81, 16))
+
     def __init__(self):
         super(firstForm, self).__init__()
         self.setupUi(self)
@@ -186,9 +189,21 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # item2 = QGraphicsPixmapItem(relIm)
 
         scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h, rawIm, relIm, self.aligned)
-        scene.changeValue.connect(self.saveOne)
+        scene.changeValue.connect(self.setKpn)
         scene.addPixmap(result)# 创建场景
-        scene.loadPair(self.save, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
+        save_path = self.save
+        rel_name = os.path.split(relPath)[-1].split('.')[0]
+        raw_name = os.path.split(rawPath)[-1].split('.')[0]
+        scene.loadPair(save_path, raw_name, rel_name)
+
+        if os.path.exists(os.path.join(save_path, raw_name+'-'+rel_name+'.txt')):
+            with warnings.catch_warnings():
+
+                warnings.simplefilter('ignore')
+                save_np = np.loadtxt(os.path.join(save_path, raw_name+'-'+rel_name+'.txt'))
+                self.label_3.setText(f'关键点对数量：{len(save_np)}')
+        else:
+            self.label_3.setText(f'关键点对数量：{0}')
         self.raw.setScene(scene)
         # self.raw.fitInView(scene.sceneRect(), QtCore.Qt.KeepAspectRatio)
         # self.rel.setScene(scene2)
@@ -202,7 +217,9 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
     #     #     return
     #     directory = 'save/'
     #     self.save = directory
-
+    def setKpn(self, l):
+        self.label_3.setText(f'关键点对数量：{l}')
+        self.saveOne()
     def saveOne(self):
         rawPath, relPath = self.imageList[self.cur - 1]
         self.raw.scene().savePair(self.save, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
@@ -230,7 +247,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
                 self.saveOne()
 
 class GraphicsScene(QGraphicsScene):
-    changeValue = pyqtSignal()
+    changeValue = pyqtSignal(int)
     def __init__(self, width, image, img_w, img_h, raw_img, rel_img, aligned):
         super(QGraphicsScene, self).__init__()
         self.point = [[], []]
@@ -239,12 +256,15 @@ class GraphicsScene(QGraphicsScene):
         #0 代表选择的是原图上的点， 1为映射图上的点
         self.flag = None
         self.image = image
-        self.sz = self.width//33
+        self.sz = self.width//30
         self.w = img_w
         self.h = img_h
+        self.m_x = 0
+        self.m_y = 0
         self.raw_img = raw_img
         self.rel_img = rel_img
         self.aligned = aligned
+
         # self.addPixmap(image)
 
     def loadPair(self, save_path, raw_name, rel_name):
@@ -258,7 +278,6 @@ class GraphicsScene(QGraphicsScene):
                     return
 
                 if len(save_np.shape) == 1:
-                    # print(save_np.shape)
                     save_np = save_np[np.newaxis, :]
 
                 raw = save_np[:, :2]
@@ -274,10 +293,13 @@ class GraphicsScene(QGraphicsScene):
                     self.draw()
                 except Exception:
                     pass
-
+            # if len(self.point) != 0:
+            #     self.changeValue.emit(len(self.point[0]))
+            # else:
+            #     self.changeValue.emit(0)
     def draw(self):
-        pen = QPen(QtCore.Qt.blue)
-        pen2 = QPen(QtCore.Qt.yellow)
+        pen = QPen(QtCore.Qt.blue, 2)
+        pen2 = QPen(QtCore.Qt.yellow, 2)
         brush = QBrush(QtCore.Qt.blue)
         brush2 = QBrush(QtCore.Qt.yellow)
         sz = self.sz
@@ -339,12 +361,13 @@ class GraphicsScene(QGraphicsScene):
     #         self.moveX = 0
 
 
+    # def mouseMoveEvent(self, QGraphicsSceneMouseEvent):
+    #     self.m_x = 1
+    #     print(QGraphicsSceneMouseEvent.scenePos())
 
-    def mouseMoveEvent(self, QGraphicsSceneMouseEvent):
-        pass
     def mousePressEvent(self, event):
         #鼠标左键是画点
-        if event.buttons () == QtCore.Qt.LeftButton:
+        if event.buttons() == QtCore.Qt.LeftButton:
             x = event.scenePos().x()
             y = event.scenePos().y()
             choose = [x, y]
@@ -361,7 +384,7 @@ class GraphicsScene(QGraphicsScene):
                         self.point[0].append(self.choose)
                     self.choose = None
                     self.flag = None
-                    self.changeValue.emit()
+                    self.changeValue.emit(len(self.point[0]))
                 else:
                     self.choose = choose
                     self.flag = flag
@@ -381,7 +404,7 @@ class GraphicsScene(QGraphicsScene):
                 if up is not None:
                     self.point[1-self.flag][up] = self.choose
                     self.choose = None
-                    self.changeValue.emit()
+                    self.changeValue.emit(len(self.point[0]))
 
         #鼠标右键是擦除
         elif event.buttons () == QtCore.Qt.RightButton:
@@ -403,7 +426,7 @@ class GraphicsScene(QGraphicsScene):
                 if rm is not None:
                     del self.point[0][rm]
                     del self.point[1][rm]
-                    self.changeValue.emit()
+                    self.changeValue.emit(len(self.point[0]))
 
         self.draw()
 
