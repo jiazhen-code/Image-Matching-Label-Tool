@@ -5,7 +5,7 @@
 ![show2](static/show2.png)
 ## 使用需知
 
-#### 标注视频可查看[video]{static/show.mp4}
+#### 标注视频可查看[video](static/show.mp4)
 
 数据存放在百度网盘https://pan.baidu.com/s/1MoRPFC1XIJW8kBj2k0CdjA, 下载后覆盖image文件即可
 
