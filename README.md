@@ -5,11 +5,11 @@
 ![show2](show2.png)
 ## 使用需知
 
-数据存放在百度网盘https://pan.baidu.com/s/1MoRPFC1XIJW8kBj2k0CdjA
+数据存放在百度网盘https://pan.baidu.com/s/1MoRPFC1XIJW8kBj2k0CdjA，下载后覆盖image文件即可
 
 1. 使用前请先准备好数据文件，如image文件夹中的格式，包含两个文件夹：query和refer。
 
-2. **使用前先修改main.py第53行self.user,与文件worklist_{user}.txt保持一致**
+2. 将worklist_{user}.txt文件放于main.py同级目录，**使用前先修改main.py第53行self.user,与文件worklist_{user}.txt保持一致**
 
 3. 本工具默认使用image文件夹作为数据集文件，save文件夹下的用户文件夹内保存标注结果。
 
