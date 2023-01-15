@@ -23,7 +23,7 @@
 
 ## 使用说明
 
-1. 为了分配工作方便，默认读取[worklist_{user}.txt](https://github.com/QzAnsel/Retinal-Label-Tool/blob/master/worklist.txt)文件中的pair对分配worklist。
+1. 为了分配工作方便，默认读取[worklist_{user}.txt](https://github.com/QzAnsel/Retinal-Label-Tool/blob/master/worklist_all.txt)文件中的pair对分配worklist。
 
 2. 开启程序 (**python main.py**)，会自动读取worklist_{user}.txt的pair对，标注文件保存为query_id-refer_id.txt，其保存格式为**x1 y1 x2 y2**,分别对应query中关键点的x，y坐标与refer图中的x，y坐标(归一化后的)。
 
