@@ -60,6 +60,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         # self.save_second_dir = os.path.join(self.save, 'ago')
         # self.choose_save()
         self.choose_image()
+        self.setMouseTracking(True)
 
     def get_img_path(self, image_dir, img_id):
         return os.path.join(image_dir, '%s.jpg' % img_id)
@@ -190,6 +191,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
 
         scene = GraphicsScene(self.img_w, result, self.img_w, self.img_h, rawIm, relIm, self.aligned)
         scene.changeValue.connect(self.setKpn)
+        scene.changePage.connect(self.changePage)
         scene.addPixmap(result)# 创建场景
         save_path = self.save
         rel_name = os.path.split(relPath)[-1].split('.')[0]
@@ -224,30 +226,31 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         rawPath, relPath = self.imageList[self.cur - 1]
         self.raw.scene().savePair(self.save, os.path.split(rawPath)[-1].split('.')[0], os.path.split(relPath)[-1].split('.')[0])
 
-    def keyPressEvent(self, event):
+    def changePage(self, flag):
         if not self.open:
             return
         if len(self.imageList) > 0:
             #向前翻页
-            if (event.key() == Qt.Key_A):
+            if (flag == 1):
                 self.aligned.clear()
                 self.saveOne()
                 self.cur = self.cur-1
                 if self.cur == 0:
                     self.cur = len(self.imageList)
                 self.loadImage(self.is_raw)
-            elif (event.key() == Qt.Key_D):
+            elif (flag == 2):
                 self.saveOne()
                 self.aligned.clear()
                 self.cur = self.cur+1
                 if self.cur == len(self.imageList)+1:
                     self.cur = 1
                 self.loadImage(self.is_raw)
-            elif (event.key() == Qt.Key_S):
+            elif (flag == 3):
                 self.saveOne()
 
 class GraphicsScene(QGraphicsScene):
     changeValue = pyqtSignal(int)
+    changePage = pyqtSignal(int)
     def __init__(self, width, image, img_w, img_h, raw_img, rel_img, aligned):
         super(QGraphicsScene, self).__init__()
         self.point = [[], []]
@@ -291,6 +294,7 @@ class GraphicsScene(QGraphicsScene):
                     rel[:, 0] += self.width
                     self.point = [list(raw), list(rel)]
                     self.draw()
+
                 except Exception:
                     pass
             # if len(self.point) != 0:
@@ -348,23 +352,54 @@ class GraphicsScene(QGraphicsScene):
                 pixmap_imgSrc = QPixmap.fromImage(temp_imgSrc).scaled(label_width, label_height)
                 self.aligned.setPixmap(pixmap_imgSrc)
 
-    # def moveBy(self, pos_x, pos_y, op=-1):
-    #     sx = int(pos_x * self.scale)
-    #     sy = int(pos_y * self.scale)
-    #     self.moveX = sx - pos_x
-    #     self.moveY = sy - pos_y
-    #     self.moveY = op * self.moveY
-    #     self.moveX = op * self.moveX
-    #     if self.moveY > 0:
-    #         self.moveY = 0
-    #     if self.moveX > 0:
-    #         self.moveX = 0
+    def keyPressEvent(self, QKeyEvent):
+        if QKeyEvent.key() == Qt.Key_Right or QKeyEvent.key() == Qt.Key_Down or QKeyEvent.key() == Qt.Key_Left or QKeyEvent.key() == Qt.Key_Up:
+            x, y = self.m_x, self.m_y
+            # print(x, y)
+            flag = x < self.width
+            ps = self.point[1 - int(flag)]
+            up = None
+            for step, (xx, yy) in enumerate(ps):
+                # 在矩形范围内，一次删除一个点
+                if abs(x - xx) < self.sz + 5 and abs(y - yy) < self.sz + 5:
+                    up = step
+                    break
 
+            rgw = [0, self.w-1]
+            rgh = [0, self.h-1]
+            if not flag:
+                rgw = [self.w, 2*self.w - 1]
+            if up is not None:
+                up_x, up_y = self.point[1 - flag][up]
+                if QKeyEvent.key() == Qt.Key_Right:
+                    up_x = up_x + 1 if up_x + 1 < rgw[1] else rgw[1]
+                    self.point[1 - flag][up] = [up_x, up_y]
+                elif QKeyEvent.key() == Qt.Key_Left:
+                    up_x = up_x - 1 if up_x - 1 > rgw[0] else rgw[0]
+                    self.point[1 - flag][up] = [up_x, up_y]
+                elif QKeyEvent.key() == Qt.Key_Up:
+                    up_y = up_y - 1 if up_y - 1 > rgh[0] else rgh[0]
+                    self.point[1 - flag][up] = [up_x, up_y]
+                else:
+                    up_y = up_y + 1 if up_y + 1 < rgh[1] else rgh[1]
+                    self.point[1 - flag][up] = [up_x, up_y]
+                self.changeValue.emit(len(self.point[0]))
+                self.draw()
 
-    # def mouseMoveEvent(self, QGraphicsSceneMouseEvent):
-    #     self.m_x = 1
-    #     print(QGraphicsSceneMouseEvent.scenePos())
+        else:
+            if QKeyEvent.key() == Qt.Key_A:
+                self.changePage.emit(1)
+            elif QKeyEvent.key() == Qt.Key_D:
+                self.changePage.emit(2)
+            elif QKeyEvent.key() == Qt.Key_S:
+                self.changePage.emit(3)
 
+    def mouseMoveEvent(self, event):
+        x = event.scenePos().x()
+        y = event.scenePos().y()
+        self.m_x = x
+        self.m_y = y
+    # def h
     def mousePressEvent(self, event):
         #鼠标左键是画点
         if event.buttons() == QtCore.Qt.LeftButton:
@@ -429,6 +464,7 @@ class GraphicsScene(QGraphicsScene):
                     self.changeValue.emit(len(self.point[0]))
 
         self.draw()
+
 
     def savePair(self, save_path, raw_name, rel_name):
         if not os.path.exists(save_path):

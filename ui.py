@@ -24,6 +24,7 @@ class Ui_Form(object):
         self.label_2.setFont(font)
         self.label_2.setObjectName("label_2")
         self.raw = QtWidgets.QGraphicsView(Form)
+        self.raw.setMouseTracking(True)
         self.raw.setGeometry(QtCore.QRect(20, 40, 1200, 600))
         self.raw.setObjectName("raw")
         self.checkBox = QtWidgets.QCheckBox(Form)
