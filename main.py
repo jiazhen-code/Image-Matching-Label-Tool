@@ -50,7 +50,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         self.open=False
         self.is_raw = True
         self.imageDir = 'image/'
-        self.user = 'lixirong'
+        self.user = 'all'
         self.save = f'save/{self.user}'
         self.work_file = f'worklist_{self.user}.txt'
         self.first_dir = os.path.join(self.imageDir, 'query')
@@ -354,37 +354,57 @@ class GraphicsScene(QGraphicsScene):
 
     def keyPressEvent(self, QKeyEvent):
         if QKeyEvent.key() == Qt.Key_Right or QKeyEvent.key() == Qt.Key_Down or QKeyEvent.key() == Qt.Key_Left or QKeyEvent.key() == Qt.Key_Up:
-            x, y = self.m_x, self.m_y
-            # print(x, y)
-            flag = x < self.width
-            ps = self.point[1 - int(flag)]
-            up = None
-            for step, (xx, yy) in enumerate(ps):
-                # 在矩形范围内，一次删除一个点
-                if abs(x - xx) < self.sz + 5 and abs(y - yy) < self.sz + 5:
-                    up = step
-                    break
-
-            rgw = [0, self.w-1]
-            rgh = [0, self.h-1]
-            if not flag:
-                rgw = [self.w, 2*self.w - 1]
-            if up is not None:
-                up_x, up_y = self.point[1 - flag][up]
+            if self.choose is not None:
+                up_x, up_y = self.choose
+                rgw = [0, self.w - 1]
+                rgh = [0, self.h - 1]
+                if not self.flag:
+                    rgw = [self.w, 2 * self.w - 1]
                 if QKeyEvent.key() == Qt.Key_Right:
                     up_x = up_x + 1 if up_x + 1 < rgw[1] else rgw[1]
-                    self.point[1 - flag][up] = [up_x, up_y]
+                    self.choose = [up_x, up_y]
                 elif QKeyEvent.key() == Qt.Key_Left:
                     up_x = up_x - 1 if up_x - 1 > rgw[0] else rgw[0]
-                    self.point[1 - flag][up] = [up_x, up_y]
+                    self.choose = [up_x, up_y]
                 elif QKeyEvent.key() == Qt.Key_Up:
                     up_y = up_y - 1 if up_y - 1 > rgh[0] else rgh[0]
-                    self.point[1 - flag][up] = [up_x, up_y]
+                    self.choose = [up_x, up_y]
                 else:
                     up_y = up_y + 1 if up_y + 1 < rgh[1] else rgh[1]
-                    self.point[1 - flag][up] = [up_x, up_y]
-                self.changeValue.emit(len(self.point[0]))
+                    self.choose = [up_x, up_y]
                 self.draw()
+            else:
+                x, y = self.m_x, self.m_y
+                # print(x, y)
+                flag = x < self.width
+                ps = self.point[1 - int(flag)]
+                up = None
+                for step, (xx, yy) in enumerate(ps):
+                    # 在矩形范围内，一次删除一个点
+                    if abs(x - xx) < self.sz + 5 and abs(y - yy) < self.sz + 5:
+                        up = step
+                        break
+
+                rgw = [0, self.w-1]
+                rgh = [0, self.h-1]
+                if not flag:
+                    rgw = [self.w, 2*self.w - 1]
+                if up is not None:
+                    up_x, up_y = self.point[1 - flag][up]
+                    if QKeyEvent.key() == Qt.Key_Right:
+                        up_x = up_x + 1 if up_x + 1 < rgw[1] else rgw[1]
+                        self.point[1 - flag][up] = [up_x, up_y]
+                    elif QKeyEvent.key() == Qt.Key_Left:
+                        up_x = up_x - 1 if up_x - 1 > rgw[0] else rgw[0]
+                        self.point[1 - flag][up] = [up_x, up_y]
+                    elif QKeyEvent.key() == Qt.Key_Up:
+                        up_y = up_y - 1 if up_y - 1 > rgh[0] else rgh[0]
+                        self.point[1 - flag][up] = [up_x, up_y]
+                    else:
+                        up_y = up_y + 1 if up_y + 1 < rgh[1] else rgh[1]
+                        self.point[1 - flag][up] = [up_x, up_y]
+                    self.changeValue.emit(len(self.point[0]))
+                    self.draw()
 
         else:
             if QKeyEvent.key() == Qt.Key_A:
