@@ -50,7 +50,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         self.open=False
         self.is_raw = True
         self.imageDir = 'image/'
-        self.user = 'liujiazhen'
+        self.user = 'lixirong'
         self.save = f'save/{self.user}'
         self.work_file = f'worklist_{self.user}.txt'
         self.first_dir = os.path.join(self.imageDir, 'query')
