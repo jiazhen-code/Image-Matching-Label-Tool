@@ -50,7 +50,7 @@ class firstForm(QtWidgets.QMainWindow, Ui_Form):
         self.open=False
         self.is_raw = True
         self.imageDir = 'image/'
-        self.user = 'all'
+        self.user = 'check'
         self.save = f'save/{self.user}'
         self.work_file = f'worklist_{self.user}.txt'
         self.first_dir = os.path.join(self.imageDir, 'query')
@@ -259,7 +259,7 @@ class GraphicsScene(QGraphicsScene):
         #0 代表选择的是原图上的点， 1为映射图上的点
         self.flag = None
         self.image = image
-        self.sz = self.width//30
+        self.sz = self.width//40
         self.w = img_w
         self.h = img_h
         self.m_x = 0
@@ -295,8 +295,9 @@ class GraphicsScene(QGraphicsScene):
                     self.point = [list(raw), list(rel)]
                     self.draw()
 
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(str(e))
+                    # pass
             # if len(self.point) != 0:
             #     self.changeValue.emit(len(self.point[0]))
             # else:
@@ -304,37 +305,37 @@ class GraphicsScene(QGraphicsScene):
     def draw(self):
         pen = QPen(QtCore.Qt.blue, 2)
         pen2 = QPen(QtCore.Qt.yellow, 2)
+        pen_wrong = QPen(QtCore.Qt.red, 2)
         brush = QBrush(QtCore.Qt.blue)
         brush2 = QBrush(QtCore.Qt.yellow)
+        brush_wrong = QBrush(QtCore.Qt.red)
+
         sz = self.sz
         self.clear()
         self.addPixmap(self.image)
         msz = 3
-        if self.choose is not None:
-            self.addRect(self.choose[0]-sz/2, self.choose[1]-sz/2, sz, sz, pen2)
-            self.addEllipse(self.choose[0]-msz/2, self.choose[1]-msz/2, msz, msz, pen2, brush2)
-        for x, y in self.point[0]:
-            self.addRect(x-sz/2, y-sz/2, sz, sz, pen)
-            self.addEllipse(x - msz / 2, y - msz / 2, msz, msz, pen, brush)
-        for x, y in self.point[1]:
-            self.addRect(x-sz/2, y-sz/2, sz, sz, pen)
-            self.addEllipse(x - msz / 2, y - msz / 2, msz, msz, pen, brush)
-        for i in range(len(self.point[0])):
-            qp1 = QPoint(int(self.point[0][i][0]), int(self.point[0][i][1]))
-            qp2 = QPoint(int(self.point[1][i][0]), int(self.point[1][i][1]))
-            ql = QLineF(qp1, qp2)
-            self.addLine(ql, pen,)
-
+        mask = np.ones(len(self.point[0]))
         if len(self.point[0])>=4:
             p1 = self.point[0]
             p2 = self.point[1]
-            cv_kpts1 = [cv2.KeyPoint(int(i[0]), int(i[1]), 25)
-                        for i in p1]
-            cv_kpts2 = [cv2.KeyPoint(int(i[0] - self.width), int(i[1]), 25)
-                        for i in p2]
-            src_pts = np.float32([cv_kpts1[i].pt for i in range(len(self.point[0]))]).reshape(-1, 1, 2)
-            dst_pts = np.float32([cv_kpts2[i].pt for i in range(len(self.point[0]))]).reshape(-1, 1, 2)
-            H_m, mask = cv2.findHomography(src_pts, dst_pts, 0, 5)
+            # cv_kpts1 = [cv2.KeyPoint(int(i[0]), int(i[1]), 25)
+            #             for i in p1]
+            # cv_kpts2 = [cv2.KeyPoint(int(i[0] - self.width), int(i[1]), 25)
+            #             for i in p2]
+            # src_pts = np.float32([cv_kpts1[i].pt for i in range(len(self.point[0]))]).reshape(-1, 1, 2)
+            # dst_pts = np.float32([cv_kpts2[i].pt for i in range(len(self.point[0]))]).reshape(-1, 1, 2)
+
+            src_pts = np.float32([[p1[i][0], p1[i][1]] for i in range(len(self.point[0]))]).reshape(-1, 1, 2)
+            dst_pts = np.float32([[p2[i][0] - self.width, p2[i][1]] for i in range(len(self.point[0]))]).reshape(-1, 1, 2)
+
+            H_m, mask = cv2.findHomography(src_pts, dst_pts, cv2.LMEDS, 5)
+
+            src_pts[:, 0, 0] = src_pts[:, 0, 0] / self.w * 600
+            src_pts[:, 0, 1] = src_pts[:, 0, 1] / self.h * 600
+
+            dst_pts[:, 0, 0] = dst_pts[:, 0, 0] / self.w * 600
+            dst_pts[:, 0, 1] = dst_pts[:, 0, 1] / self.h * 600
+            _, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC)
             if H_m is not None:
                 im1 = self.raw_img[:,:,1]
                 im2 = self.rel_img[:,:,1]
@@ -352,6 +353,32 @@ class GraphicsScene(QGraphicsScene):
                 pixmap_imgSrc = QPixmap.fromImage(temp_imgSrc).scaled(label_width, label_height)
                 self.aligned.setPixmap(pixmap_imgSrc)
 
+        if self.choose is not None:
+            self.addRect(self.choose[0]-sz/2, self.choose[1]-sz/2, sz, sz, pen2)
+            self.addEllipse(self.choose[0]-msz/2, self.choose[1]-msz/2, msz, msz, pen2, brush2)
+        for s, (x, y) in enumerate(self.point[0]):
+            if mask[s]:
+                self.addRect(x-sz/2, y-sz/2, sz, sz, pen)
+                self.addEllipse(x - msz / 2, y - msz / 2, msz, msz, pen, brush)
+            else:
+                self.addRect(x - sz / 2, y - sz / 2, sz, sz, pen_wrong)
+                self.addEllipse(x - msz / 2, y - msz / 2, msz, msz, pen, brush_wrong)
+        for s, (x, y) in enumerate(self.point[1]):
+            if mask[s]:
+                self.addRect(x-sz/2, y-sz/2, sz, sz, pen)
+                self.addEllipse(x - msz / 2, y - msz / 2, msz, msz, pen, brush)
+            else:
+                self.addRect(x - sz / 2, y - sz / 2, sz, sz, pen_wrong)
+                self.addEllipse(x - msz / 2, y - msz / 2, msz, msz, pen, brush_wrong)
+        for i in range(len(self.point[0])):
+            qp1 = QPoint(int(self.point[0][i][0]), int(self.point[0][i][1]))
+            qp2 = QPoint(int(self.point[1][i][0]), int(self.point[1][i][1]))
+            ql = QLineF(qp1, qp2)
+            if mask[i]:
+                self.addLine(ql, pen,)
+
+            else:
+                self.addLine(ql, pen_wrong, )
     def keyPressEvent(self, QKeyEvent):
         if QKeyEvent.key() == Qt.Key_Right or QKeyEvent.key() == Qt.Key_Down or QKeyEvent.key() == Qt.Key_Left or QKeyEvent.key() == Qt.Key_Up:
             if self.choose is not None:
@@ -381,7 +408,7 @@ class GraphicsScene(QGraphicsScene):
                 up = None
                 for step, (xx, yy) in enumerate(ps):
                     # 在矩形范围内，一次删除一个点
-                    if abs(x - xx) < self.sz + 5 and abs(y - yy) < self.sz + 5:
+                    if abs(x - xx) < self.sz and abs(y - yy) < self.sz:
                         up = step
                         break
 
@@ -453,7 +480,7 @@ class GraphicsScene(QGraphicsScene):
                 up = None
                 for step, (xx, yy) in enumerate(ps):
                     # 在矩形范围内，一次删除一个点
-                    if abs(x - xx) < self.sz + 5 and abs(y - yy) < self.sz + 5:
+                    if abs(x - xx) < self.sz and abs(y - yy) < self.sz:
                         up = step
                         break
                 if up is not None:
